@@ -1,0 +1,5 @@
+package com.sunbase.assingment.controller;
+
+public class LoginController {
+
+}

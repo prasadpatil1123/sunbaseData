@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Customer List</title>
+</head>
+<body>
+    <h1>Customer List</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Iterate through the customers using Thymeleaf each attribute -->
+            <tr th:each="customer : ${customers}">
+                <td th:text="${customer.first_name}"></td>
+                <td th:text="${customer.last_name}"></td>
+                <td th:text="${customer.email}"></td>
+                <td th:text="${customer.phone}"></td>
+                <td>
+                    <!-- Form for deleting a customer -->
+                    <form th:action="@{/customer/delete/{uuid}(uuid=${customer.uuid})}" method="post" th:object="${customer}">
+                        <input type="hidden" th:attr="name='_method'" th:value="DELETE" />
+                        <button type="submit" onclick="return confirm('Are you sure you want to delete this customer?')">Delete</button>
+                    </form>
+                    <a th:href="@{/customer/update/{uuid}(uuid=${customer.uuid})}">Edit</a>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <a href="/customer/add">Add New Customer</a>
+    <a href="/">Logout</a>
+</body>
+</html>

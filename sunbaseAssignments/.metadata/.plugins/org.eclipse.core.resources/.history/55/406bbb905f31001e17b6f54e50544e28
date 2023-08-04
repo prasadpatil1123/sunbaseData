@@ -1,0 +1,5 @@
+package com.sunbase.assingment.service;
+
+public class LoginService {
+
+}

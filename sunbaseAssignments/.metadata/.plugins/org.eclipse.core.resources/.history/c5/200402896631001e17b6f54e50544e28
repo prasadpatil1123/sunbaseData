@@ -1,0 +1,167 @@
+package com.sunbase.assingment.controller;
+import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.*;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
+
+import com.fasterxml.jackson.databind.util.JSONPObject;
+import com.sunbase.assingment.model.Customer;
+
+import jakarta.servlet.http.HttpSession;
+
+import java.util.Arrays;
+import java.util.List;
+@Controller
+public class CustomerController {
+
+	
+	
+
+    private final String AUTH_API_URL = "https://qa2.sunbasedata.com/sunbase/portal/api/assignment_auth.jsp";
+    private final String CUSTOMER_API_URL = "https://qa2.sunbasedata.com/sunbase/portal/api/assignment.jsp";
+    private final RestTemplate restTemplate;
+
+    @Autowired
+    public CustomerController(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
+
+    @GetMapping("/login")
+    public String loginPage() {
+        return "login";
+    }
+
+    @PostMapping("/login")
+    public String authenticateUser(@RequestParam String login_id, @RequestParam String password, HttpSession session, Model model) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        String requestBody = "{\"login_id\":\"" + login_id + "\",\"password\":\"" + password + "\"}";
+        HttpEntity<String> request = new HttpEntity<>(requestBody, headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(AUTH_API_URL, HttpMethod.POST, request, String.class);
+        if (response.getStatusCode() == HttpStatus.OK) {
+        	JSONObject json = new  JSONObject(response.getBody());
+            String token = json.getString("access_token");
+            // Save the token in session or in a cookie
+            session.setAttribute("bearerToken", token);
+            return "redirect:/customer/list";
+        } else {
+            model.addAttribute("errorMessage", "Authentication failed!");
+            return "login";
+        }
+    }
+
+    @GetMapping("/customer/list")
+    public String getCustomerList(HttpSession session, Model model) {
+    	
+        String bearerToken = (String) session.getAttribute("bearerToken");
+
+    	 if (bearerToken == null) {
+             model.addAttribute("errorMessage", "Invalid session! Please log in again.");
+             return "login"; // Redirect to login page
+         }
+
+         HttpHeaders headers = new HttpHeaders();
+         headers.setBearerAuth(bearerToken);
+         HttpEntity<String> request = new HttpEntity<>(headers);
+
+        ResponseEntity<Customer[]> response = restTemplate.exchange(CUSTOMER_API_URL + "?cmd=get_customer_list", HttpMethod.GET, request, Customer[].class);
+        if (response.getStatusCode() == HttpStatus.OK) {
+            List<Customer> customers = Arrays.asList(response.getBody());
+            model.addAttribute("customers", customers);
+            return "customer_list";
+        } else {
+            model.addAttribute("errorMessage", "Failed to fetch customer list!");
+            return "login"; // Redirect to login page
+        }
+    }
+
+    
+    @GetMapping("/customer/add")
+    public String showAddCustomerForm() {
+        return "add_customer";
+    }
+
+    @PostMapping("/customer/add")
+    public String addCustomer(@ModelAttribute Customer customer, HttpSession session, Model model) {
+        String bearerToken = (String) session.getAttribute("bearerToken");
+
+        if (bearerToken == null) {
+            model.addAttribute("errorMessage", "Invalid session! Please log in again.");
+            return "login"; // Redirect to login page
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(bearerToken);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<Customer> request = new HttpEntity<>(customer, headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(CUSTOMER_API_URL + "?cmd=create", HttpMethod.POST, request, String.class);
+        if (response.getStatusCode() == HttpStatus.CREATED) {
+            model.addAttribute("successMessage", "Customer created successfully!");
+            return "redirect:/customer/list"; // Redirect to customer list page
+        } else if (response.getStatusCode() == HttpStatus.BAD_REQUEST) {
+            model.addAttribute("errorMessage", "First Name or Last Name is missing!");
+        } else {
+            model.addAttribute("errorMessage", "Failed to create customer!");
+        }
+
+        return "add_customer"; // Redirect to add customer page (with error message)
+    }
+
+    @GetMapping("/customer/update/{uuid}")
+    public String showUpdateCustomerForm(@PathVariable String uuid, HttpSession session, Model model) {
+        String bearerToken = (String) session.getAttribute("bearerToken");
+
+        if (bearerToken == null) {
+            model.addAttribute("errorMessage", "Invalid session! Please log in again.");
+            return "login"; // Redirect to login page
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(bearerToken);
+        HttpEntity<String> request = new HttpEntity<>(headers);
+
+        ResponseEntity<Customer> response = restTemplate.exchange(CUSTOMER_API_URL + "?cmd=get_customer&uuid=" + uuid, HttpMethod.GET, request, Customer.class);
+        if (response.getStatusCode() == HttpStatus.OK) {
+            Customer customer = response.getBody();
+            model.addAttribute("customer", customer);
+            return "update_customer";
+        } else {
+            model.addAttribute("errorMessage", "Failed to fetch customer details!");
+            return "customer_list"; // Redirect to customer list page with an error
+        }
+    }
+
+    @PostMapping("/customer/update/{uuid}")
+    public String updateCustomer(@PathVariable String uuid, @ModelAttribute Customer updatedCustomer, HttpSession session, Model model) {
+        String bearerToken = (String) session.getAttribute("bearerToken");
+
+        if (bearerToken == null) {
+            model.addAttribute("errorMessage", "Invalid session! Please log in again.");
+            return "login"; // Redirect to login page
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(bearerToken);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<Customer> request = new HttpEntity<>(updatedCustomer, headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(CUSTOMER_API_URL + "?cmd=update&uuid=" + uuid, HttpMethod.POST, request, String.class);
+        if (response.getStatusCode() == HttpStatus.OK) {
+            model.addAttribute("successMessage", "Customer updated successfully!");
+        } else if (response.getStatusCode() == HttpStatus.BAD_REQUEST) {
+            model.addAttribute("errorMessage", "UUID not found!");
+        } else {
+            model.addAttribute("errorMessage", "Failed to update customer!");
+        }
+
+        return "redirect:/customer/list"; // Redirect to customer list page
+    }
+}

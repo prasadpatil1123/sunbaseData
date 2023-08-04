@@ -1,0 +1,5 @@
+package com.sunbase.assingment;
+
+public class RestTemplateConfig {
+
+}

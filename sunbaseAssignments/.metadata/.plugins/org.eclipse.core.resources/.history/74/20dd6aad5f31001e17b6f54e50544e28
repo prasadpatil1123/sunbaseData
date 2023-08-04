@@ -1,0 +1,49 @@
+package com.sunbase.assingment.controller;
+
+import java.util.*;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.client.RestTemplate;
+
+public class LoginController {
+
+	
+	   private final String AUTH_API_URL = "https://qa2.sunbasedata.com/sunbase/portal/api/assignment_auth.jsp";
+
+	    @Autowired
+	    private RestTemplate restTemplate;
+
+	    @PostMapping("/login")
+	    public String authenticateUser(@RequestParam String login_id, @RequestParam String password, Model model) {
+	        HttpHeaders headers = new HttpHeaders();
+	        headers.setContentType(MediaType.APPLICATION_JSON);
+
+	        // Prepare the request body
+	        Map<String, String> requestBody = new HashMap<>();
+	        requestBody.put("login_id", login_id);
+	        requestBody.put("password", password);
+
+	        HttpEntity<Map<String, String>> request = new HttpEntity<>(requestBody, headers);
+
+	        // Send the POST request to the authentication API
+	        ResponseEntity<String> response = restTemplate.exchange(AUTH_API_URL, HttpMethod.POST, request, String.class);
+	        if (response.getStatusCode() == HttpStatusCode.valueOf(200)) {
+	            String token = response.getBody();
+	            // Save the token in session or in a cookie
+	            model.addAttribute("bearerToken", token);
+	            return "redirect:/customer/list";
+	        } else {
+	            model.addAttribute("errorMessage", "Authentication failed!");
+	            return "login";
+	        }
+	    }
+}

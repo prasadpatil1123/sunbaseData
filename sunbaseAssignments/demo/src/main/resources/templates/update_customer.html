@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Update Customer</title>
+</head>
+<body>
+    <h1>Update Customer</h1>
+    <form th:action="@{/customer/update}" th:object="${customer}" method="post">
+        <input type="hidden" th:field="*{uuid}" />
+        <div>
+            <label for="first_name">First Name:</label>
+            <input type="text" th:field="*{first_name}" />
+        </div>
+        <div>
+            <label for="last_name">Last Name:</label>
+            <input type="text" th:field="*{last_name}" />
+        </div>
+        <div>
+            <label for="street">Street:</label>
+            <input type="text" th:field="*{street}" />
+        </div>
+        <div>
+            <label for="address">Address:</label>
+            <input type="text" th:field="*{address}" />
+        </div>
+        <div>
+            <label for="city">City:</label>
+            <input type="text" th:field="*{city}" />
+        </div>
+        <div>
+            <label for="state">State:</label>
+            <input type="text" th:field="*{state}" />
+        </div>
+        <div>
+            <label for="email">Email:</label>
+            <input type="text" th:field="*{email}" />
+        </div>
+        <div>
+            <label for="phone">Phone:</label>
+            <input type="text" th:field="*{phone}" />
+        </div>
+        <button type="submit">Update</button>
+    </form>
+    <a href="/customer/list">Back to Customer List</a>
+    <a href="/">Logout</a>
+</body>
+</html>
